@@ -13,6 +13,16 @@ RepoGuide is a single-user, local learning platform for understanding repositori
 - When the user explicitly requests implementation, complete the requested scope.
 - Explain important design decisions and trade-offs.
 
+## Action Transparency
+
+- Before using tools, briefly explain what you will inspect or change and why. Group related actions into clear steps.
+- Keep the user informed when the plan changes or troubleshooting requires additional actions.
+- Explain configuration changes and dependency additions in plain language, including what each setting does and why it is needed.
+- After each completed step, report the actions actually taken, the files changed, the commands run, and their results. Distinguish inspection from modification and planned actions from completed actions.
+- Disclose environment changes, including temporary shell variables, virtual environment changes, file metadata changes, and tool installation. State whether their effects are temporary or persistent and where they apply.
+- Report Git operations explicitly, including staging, commits, and pushes. Do not leave the user to infer changes from tool output alone.
+- Keep explanations concise, but do not omit changes merely because they seem routine. These reporting requirements do not require extra approval for actions already authorized by the user.
+
 ## Project Layout
 
 - Keep application code in `src/`.
