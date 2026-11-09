@@ -1,3 +1,5 @@
-# 前端（待實作）
+# Frontend
 
-預計使用 React，負責聊天、程式碼瀏覽與筆記介面，對應 MVC 的 View。現階段先透過後端 /docs 驗收 API，尚未建立前端應用。
+The planned React frontend will provide chat, code browsing, and note editing. Implementation has not started yet.
+
+For now, use the backend's [interactive API docs](http://127.0.0.1:8000/docs) to try the available endpoints.

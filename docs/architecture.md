@@ -1,55 +1,58 @@
-# RepoGuide 架構決策
+# RepoGuide Architecture
 
-## 模組化單體與分層
+## Modular monolith
 
-初期以一個 FastAPI 後端提供 API，前端另以 React 呈現。各功能在同一份程式中用模組隔開，先不引入微服務。後續程式執行工作可以交給獨立 worker，共用服務與資料模型。
+RepoGuide starts with a single FastAPI backend and a planned React frontend. Features are separated into modules within the same application. Microservices are not needed at this stage. Code execution may later run in a separate worker that shares services and data models with the backend.
 
-這是參考 MVC 職責分離的 API 架構：View 是 React；Controller 是 HTTP 路由；Model 的職責再分為資料模型、業務服務與資料存取。Pydantic API schema 與資料庫 model 分開維護。
+The API follows MVC-style separation of responsibilities: React provides the view, HTTP routes act as controllers, and model responsibilities are split across persistence models, business services, and repositories. Pydantic API schemas remain separate from database models.
 
-## 目錄職責
+## Directory responsibilities
 
-| 路徑 | 責任 | 預計範例 |
+Backend code lives in `src/backend/`, with automated tests under `test/`. The project is installed as an editable package through uv, keeping Python imports under the `backend` namespace.
+
+| Path | Responsibility | Planned examples |
 | --- | --- | --- |
-| backend/app.py | 建立應用、掛載路由與生命週期 | create_app |
-| backend/controllers/ | 處理 HTTP 輸入、呼叫 service、回傳結果 | chat.py、workspaces.py |
-| backend/schemas/ | API 請求與回應的 Pydantic 型別 | ChatRequest、ChatResponse |
-| backend/services/ | 業務流程與使用案例 | 聊天、repo 問答、整理筆記 |
-| backend/models/ | 持久化資料模型 | Conversation、Message、Note、Run |
-| backend/repositories/ | 資料庫讀寫與查詢 | 對話保存、筆記查詢 |
-| backend/integrations/ | 外部系統介接 | LiteLLM、Git、Docker、向量資料庫 |
-| backend/core/ | 共用設定與基礎設施初始化 | 環境變數、logging、資料庫連線 |
-| frontend/ | 使用者介面，對應 View | React 聊天與編輯器 |
+| `src/backend/app.py` | Create the application, register routes, and manage its lifecycle | `create_app` |
+| `src/backend/controllers/` | Handle HTTP input, call services, and return responses | `chat.py`, `workspaces.py` |
+| `src/backend/schemas/` | Define Pydantic API request and response types | `ChatRequest`, `ChatResponse` |
+| `src/backend/services/` | Implement business workflows | Chat, repository Q&A, note creation |
+| `src/backend/models/` | Define persistence models | `Conversation`, `Message`, `Note`, `Run` |
+| `src/backend/repositories/` | Read and write database records | Conversation storage, note queries |
+| `src/backend/integrations/` | Connect to external systems | LiteLLM, Git, Docker, vector stores |
+| `src/backend/core/` | Provide shared configuration and infrastructure setup | Environment variables, logging, database connections |
+| `frontend/` | Provide the user interface | React chat and editor views |
 
-空套件目前只是預留責任位置；不提前建立抽象基底類別或未使用的業務程式。
+Existing empty packages mark intended responsibilities. Add implementations when needed; do not introduce unused base classes or business logic.
 
-## 呼叫方向
+## Request flow
 
 ```text
 React → Controller → Service → Repository → SQLite
-                            → Integration → 外部服務
+                            → Integration → External service
 ```
 
-- Controller 保持簡單，不放模型供應商設定或 SQL。
-- Service 協調流程，不依賴 Request、Response 等 HTTP 型別。
-- Repository 封裝資料存取；Integration 封裝外部系統。
-- app.py 負責組裝，其餘模組不反向 import app.py，避免循環依賴。
-- /health 足夠簡單，直接回應，不必建立無作用的 service/repository。
+- Keep controllers small. Model provider configuration and SQL belong elsewhere.
+- Services coordinate workflows without depending on HTTP request or response objects.
+- Repositories handle persistence; integrations handle external systems.
+- `app.py` assembles the application. Other modules must not import it, to avoid circular dependencies.
+- `/health` returns directly from its controller. It does not need a service or repository.
 
-第一個聊天流程預計為：chat controller → chat service → LiteLLM adapter → OpenRouter。成功後再加入對話保存與串流。
+The first chat flow will be: chat controller → chat service → LiteLLM adapter → OpenRouter. Add conversation storage and streaming after the basic request and response flow works.
 
-## AI 功能如何加入
+## Planned AI features
 
-- Tool calling：後續在 backend/agents/tools/ 建立薄介面，重用 services 的搜尋與讀檔能力。
-- Skills：後續在專案 skills/ 保存教學指引，由 Agent runtime 選擇與載入。它們是產品使用的指引，不是本專案開發助理的設定。
-- RAG：檢索流程放 services；embedding 與向量庫介接放 integrations；筆記本文由一般資料庫保存。
-- 執行環境：HTTP 建立工作，worker 執行受限 Docker job；Run 保存程式版本、stdout、stderr 與 exit code。
-- MCP：工具穩定後新增協定入口，重用服務，不另外複製業務邏輯。
+- **Tool calling:** Add thin tool interfaces that reuse service methods for searching and reading files.
+- **Skills:** Store teaching instructions in the project's `skills/` directory for the agent runtime to select and load. These are product features, separate from instructions for the development assistant.
+- **RAG:** Keep retrieval workflows in services and embedding and vector store adapters in integrations. Store note content in the regular database.
+- **Code execution:** Create jobs through the HTTP API and run them in restricted Docker environments through a worker. A `Run` record stores the code version, stdout, stderr, and exit code.
+- **MCP:** Add a protocol entry point once tools are stable. Reuse existing services instead of duplicating business logic.
 
-以上目錄在實作對應功能時才新增。
+Create the required directories only when implementing each feature, following the layout rules in `AGENTS.md`.
 
-## 後續演進
+## Future changes
 
-目前以分層目錄幫助理解責任。當聊天、工作區、筆記各自變大，再搬到 backend/modules/chat/ 等功能模組，在模組內保留 controller/service/repository 分工。需要替換外部系統或隔離測試時，再引入少量介面與依賴注入；現階段不套用完整的 Clean Architecture 樣板。
+The current layers make responsibilities easy to follow. As chat, workspaces, and notes grow, group them into feature modules while keeping controller, service, and repository responsibilities separate within each module.
 
-FastAPI 的路由拆分依照官方 APIRouter 文件：
-https://fastapi.tiangolo.com/tutorial/bigger-applications/
+Introduce interfaces and dependency injection when needed to replace external systems or isolate tests. A full Clean Architecture template is unnecessary at this stage.
+
+Route organization follows FastAPI's [APIRouter documentation](https://fastapi.tiangolo.com/tutorial/bigger-applications/).

@@ -7,8 +7,16 @@ dependencies = [
     "uvicorn[standard]>=0.54.0",
 ]
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/backend"]
+
 [tool.pyright]
-include = ["backend"]
+include = ["src/backend"]
+extraPaths = ["src"]
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.12"

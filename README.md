@@ -1,32 +1,35 @@
 # RepoGuide
 
-更快讀懂專案，從理解到實作。
+Understand repositories, practice with code, and keep learning notes.
 
-單人、本機使用的 repo 學習工作台。採小步實作：聊天 → repo 問答 → 程式執行 → 筆記 → RAG → MCP 與部署。
+RepoGuide is a local, single-user learning workspace. Features are built incrementally: chat, repository Q&A, code execution, notes, retrieval-augmented generation (RAG), and MCP integration and deployment.
 
-## 目前進度
+## Status
 
-已建立後端分層骨架及 `GET /health`。模型串接、資料庫、前端、工具與 Skills 尚未實作。
+The FastAPI backend structure and `GET /health` endpoint are in place. Model integration, persistence, the frontend, tools, and skills are not implemented yet.
 
-## 啟動
+## Getting started
 
-在專案根目錄執行（需要 Python 3.10+）：
+Requirements: uv and Python 3.12 or later.
+
+Run from the repository root:
 
 ```bash
-source .venv/bin/activate
-python -m pip install -r backend/requirements.txt
-python -m uvicorn backend.app:app --reload
+uv sync
+uv run uvicorn backend.app:app --reload
 ```
 
-若尚未有虛擬環境，先執行 `python3 -m venv .venv`。
+`uv sync` installs dependencies from `uv.lock` and creates `.venv` if needed. You do not need to create or activate the environment manually.
 
-- 健康檢查：http://127.0.0.1:8000/health，預期 `{"status":"ok"}`。
-- 互動式 API 文件：http://127.0.0.1:8000/docs。
+The backend package lives in `src/backend/`. `uv sync` installs the project in editable mode, so the `backend.app:app` import path works without setting `PYTHONPATH`.
 
-依賴目前使用相容版本範圍；正式部署前再加入 lockfile 固定實際版本。
+- [Health check](http://127.0.0.1:8000/health): returns `{"status":"ok"}`.
+- [Interactive API docs](http://127.0.0.1:8000/docs).
 
-## 下一個學習任務
+Dependencies are declared in `pyproject.toml`, with resolved versions pinned in `uv.lock`. Use `uv add <package>` for application dependencies and `uv add --dev <package>` for development tools.
 
-實作聊天的 request/response schema，再串起 controller、service 與 LiteLLM/OpenRouter adapter。第一步先完成非串流的一問一答。
+## Next milestone
 
-架構與各目錄職責請見 [docs/architecture.md](docs/architecture.md)。
+Define the chat request and response schemas, then connect the controller and service to a LiteLLM adapter using OpenRouter. Start with a single request and response without streaming.
+
+See [Architecture](docs/architecture.md) for the project structure and module responsibilities.
